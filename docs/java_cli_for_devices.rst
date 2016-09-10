@@ -19,6 +19,7 @@ The constructor builds the client instance, and accepts a Properties object cont
 * auth-method - Method of authentication (This is an optional field, needed only for registered flow and the only value currently supported is "token"). 
 * auth-token - API key token (This is an optional field, needed only for registered flow).
 * clean-session - true or false (required only if you want to connect the application in durable subscription. By default the clean-session is set to true).
+* Port - Specify the port number to connect to the Watson IoT Platform. (Required only for registered flow and one can use this property to connect to Watson IoT Platform using 443). Default value is 8883.
 
 **Note:** One must set clean-session to false to connect the device in durable subscription. Refer to `Subscription Buffers and Clean Session <https://docs.internetofthings.ibmcloud.com/reference/mqtt/index.html#/subscription-buffers-and-clean-session#subscription-buffers-and-clean-session>`__ for more information about the clean session.
 

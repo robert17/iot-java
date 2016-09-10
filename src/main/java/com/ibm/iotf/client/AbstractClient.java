@@ -261,7 +261,9 @@ public abstract class AbstractClient {
 	
 	private void configureMqtts() {
 		final String METHOD = "configureMqtts";
-		String serverURI = "ssl://" + getOrgId() + "." + MESSAGING + "." + this.getDomain() + ":" + MQTTS_PORT;
+		int port = getPortNumber();
+		
+		String serverURI = "ssl://" + getOrgId() + "." + MESSAGING + "." + this.getDomain() + ":" + port;
 		try {
 			mqttAsyncClient = new MqttAsyncClient(serverURI, clientId, null);
 			mqttAsyncClient.setCallback(mqttCallback);
@@ -464,6 +466,16 @@ public abstract class AbstractClient {
 			org = options.getProperty("Organization-ID");
 		}
 		return trimedValue(org);
+	}
+	
+	/**
+	 * 
+	 * @return the port number specified by the user
+	 */
+	private int getPortNumber() {
+		String port = options.getProperty("Port", Integer.toString(MQTTS_PORT));
+		port = trimedValue(port);
+		return Integer.parseInt(port);
 	}
 	
 	/*

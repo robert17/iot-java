@@ -20,6 +20,7 @@ The constructor builds the client instance, and accepts a Properties object cont
 * auth-token - API key token (required if auth-method is “apikey”).
 * clean-session - true or false (required only if you want to connect the application in durable subscription. By default the clean-session is set to true).
 * shared-subscription - true or false (required only if shared subscription needs to be enabled)
+* Port - Specify the port number to connect to the Watson IoT Platform. (Required only for registered flow and one can use this property to connect to Watson IoT Platform using 443). Default value is 8883.
 
 **Note**: One must set shared-subscription to true to build scalable applications which will load balance messages across multiple instances of the application. Refer to the `scalable applications section <https://docs.internetofthings.ibmcloud.com/applications/mqtt.html#/scalable-applications#scalable-applications>`__ for more information about the load balancing.
 
