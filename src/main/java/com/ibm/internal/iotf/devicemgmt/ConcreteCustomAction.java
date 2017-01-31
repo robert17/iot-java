@@ -8,6 +8,7 @@
  Contributors:
  Mike Tran - Initial Contribution
  Sathiskumar Palaniappan - Initial Contribution
+ Mike Robertson
  *****************************************************************************
  *
  */
@@ -23,12 +24,12 @@ import com.google.gson.JsonPrimitive;
 import com.ibm.iotf.devicemgmt.CustomAction;
 
 /**
- * This class encapsulates the device action like reboot and factory reset.
+ * This class encapsulates a custom action defined within a device management extension.
  * 
  */
 public class ConcreteCustomAction implements CustomAction {
 	
-	public static final String DEVICE_ACTION_STATUS_UPDATE = "ListenerStatusUpdate";
+	public static final String CUSTOM_ACTION_STATUS_UPDATE = "ListenerStatusUpdate";
 	
 	private Status status;
 	private String message;
@@ -77,32 +78,32 @@ public class ConcreteCustomAction implements CustomAction {
 	}
 
 	/**
-	 * <p>Set the failure status of the current device action
+	 * <p>Set the failure status of the current custom action
 	 * <br>
-	 * The Device Action handler must use this method to report 
+	 * The Custom Action handler must use this method to report 
 	 * the failure status back to IBM Watson IoT Platform whenever
 	 * there is a failure.</p>
 	 * 
-	 * @param status Failure status of the current device action
+	 * @param status Failure status of the current custom action
 	 */
 	public void setStatus(Status status) {
 		this.status = status;
-		this.fireEvent(DEVICE_ACTION_STATUS_UPDATE);
+		this.fireEvent(CUSTOM_ACTION_STATUS_UPDATE);
 	}
 	
 	/**
-	 * <p>Set the failure status of the current device action
+	 * <p>Set the failure status of the current custom action
 	 * <br>
-	 * The Device Action handler must use this method to report 
+	 * The Custom Action handler must use this method to report 
 	 * the failure status back to IBM Watson IoT Platform whenever
 	 * there is a failure.</p>
 	 * 
-	 * @param status Failure status of the current device action
+	 * @param status Failure status of the current custom action
 	 */
 	public void setStatus(Status status, String message) {
 		this.status = status;
 		this.message = message;
-		this.fireEvent(DEVICE_ACTION_STATUS_UPDATE);
+		this.fireEvent(CUSTOM_ACTION_STATUS_UPDATE);
 	}
 	
 	public String getMessage() {
@@ -121,16 +122,16 @@ public class ConcreteCustomAction implements CustomAction {
 	}
 		
 	/**
-	 * Add a new listener to be notified when device action status is changed. 
+	 * Add a new listener to be notified when custom action status is changed. 
 	 * 
 	 * @param listener PropertyChangeListener
 	 */
 	public synchronized void addPropertyChangeListener(PropertyChangeListener listener) {
-		pcs.addPropertyChangeListener(DEVICE_ACTION_STATUS_UPDATE, listener);
+		pcs.addPropertyChangeListener(CUSTOM_ACTION_STATUS_UPDATE, listener);
 	}
 	
 	public synchronized void clearListener() {
-		PropertyChangeListener[] listener = pcs.getPropertyChangeListeners(DEVICE_ACTION_STATUS_UPDATE);
+		PropertyChangeListener[] listener = pcs.getPropertyChangeListeners(CUSTOM_ACTION_STATUS_UPDATE);
 		for(int i = 0; i < listener.length; i++) {
 			pcs.removePropertyChangeListener(listener[i]);
 		}

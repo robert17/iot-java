@@ -16,7 +16,6 @@ package com.ibm.internal.iotf.devicemgmt.handler;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-//import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.ibm.internal.iotf.devicemgmt.ConcreteCustomAction;
