@@ -92,7 +92,7 @@ public class DeviceUpdateRequestHandler extends DMRequestHandler {
 	 * This method handles all the update requests from IBM Watson IoT Platform
 	 */
 	@Override
-	public void handleRequest(JsonObject jsonRequest) {
+	public void handleRequest(JsonObject jsonRequest, String topic) {
 		final String METHOD = "handleRequest";
 		List<Resource> fireRequiredResources = new ArrayList<Resource>();
 		JsonArray fields;

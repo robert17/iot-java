@@ -44,6 +44,7 @@ import com.ibm.iotf.client.gateway.GatewayClient;
 import com.ibm.internal.iotf.devicemgmt.ManagedClient;
 import com.ibm.internal.iotf.devicemgmt.DMAgentTopic;
 import com.ibm.internal.iotf.devicemgmt.DMServerTopic;
+import com.ibm.iotf.devicemgmt.CustomActionHandler;
 import com.ibm.iotf.devicemgmt.DeviceActionHandler;
 import com.ibm.iotf.devicemgmt.DeviceData;
 import com.ibm.iotf.devicemgmt.DeviceFirmwareHandler;
@@ -98,6 +99,7 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 	
 	private DeviceFirmwareHandler fwHandler = null;
 	private DeviceActionHandler actionHandler = null;
+	private CustomActionHandler customActionHandler = null;
 	
 	//Map to handle duplicate responses
 	private Map<String, MqttMessage> requests = new HashMap<String, MqttMessage>();
@@ -242,6 +244,7 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 		private DeviceData deviceData = null;
 		private boolean deviceActions = false;
 		private boolean firmwareActions = false;
+		private Map<String,Boolean> customActions = new HashMap<>();
 		
 		public boolean isDeviceActions() {
 			return deviceActions;
@@ -249,6 +252,10 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 
 		public boolean isFirmwareActions() {
 			return firmwareActions;
+		}
+		
+		public boolean isCustomActions(String bundleId) {
+			return customActions.get(bundleId);
 		}
 
 		private boolean bManaged = false;
@@ -271,6 +278,18 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 			this.firmwareActions = supportsFirmwareActions;
 			this.deviceActions = supportDeviceActions;
 		}
+		
+		public ManagedGatewayDevice(ManagedGateway gwClient,
+				DeviceData deviceData, boolean supportsFirmwareActions,
+				boolean supportDeviceActions, Map<String,Boolean> customActions) {
+			this.gwClient = gwClient;
+			this.deviceData = deviceData;
+			this.gatewayDMAgentTopic = new GatewayDMAgentTopic(deviceData.getTypeId(), deviceData.getDeviceId());
+			this.gatewayDMServerTopic = new GatewayDMServerTopic(deviceData.getTypeId(), deviceData.getDeviceId());
+			this.firmwareActions = supportsFirmwareActions;
+			this.deviceActions = supportDeviceActions;
+			this.customActions = customActions;
+		}
 
 		@Override
 		public void subscribe(String topic, int qos,
@@ -284,11 +303,11 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 		}
 
 		@Override
-		public void publish(String response, JsonObject payload)
-				throws MqttException {
-			gwClient.publish(response, payload);
-		}
-		
+ 		public void publish(String response, JsonObject payload)
+ 				throws MqttException {
+ 			gwClient.publish(response, payload);
+ 		}
+
 		@Override
 		public void publish(String response, JsonObject payload, int qos)
 				throws MqttException {
@@ -341,6 +360,10 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 			this.deviceActions = supportDeviceActions;
 		}
 		
+		public void setSupportsCustomActions(Map<String,Boolean> customActions) {
+			this.customActions = customActions;
+		}
+		
 		@Override
 		public DeviceActionHandler getActionHandler() {
 			return this.gwClient.actionHandler;
@@ -349,6 +372,11 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 		@Override
 		public DeviceFirmwareHandler getFirmwareHandler() {
 			return gwClient.fwHandler;
+		}
+		
+		@Override 
+		public CustomActionHandler getCustomActionHandler() {
+			return gwClient.customActionHandler;
 		}
 	}
 	
@@ -385,7 +413,18 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 			this.devicesMap.put(gatewayKey, this.gateway);
 		}
 		return this.sendDeviceManageRequest(this.getGWDeviceType(), getGWDeviceId(), gateway.getDeviceData(),
-				lifetime, supportFirmwareActions, supportDeviceActions);
+				lifetime, supportFirmwareActions, supportDeviceActions, null);
+	}
+	
+	
+	public boolean sendGatewayManageRequest(long lifetime, boolean supportFirmwareActions, 
+			boolean supportDeviceActions, Map<String,Boolean> customActions) throws MqttException {
+		// Add the gateway to the map if its not added already
+		if(!this.devicesMap.containsKey(this.gatewayKey)) {
+			this.devicesMap.put(gatewayKey, this.gateway);
+		}
+		return this.sendDeviceManageRequest(this.getGWDeviceType(), getGWDeviceId(), gateway.getDeviceData(),
+				lifetime, supportFirmwareActions, supportDeviceActions, customActions);
 	}
 	
 	
@@ -424,7 +463,16 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 			boolean supportDeviceActions) throws MqttException {
 		
 		return this.sendDeviceManageRequest(typeId, deviceId, null, 
-				lifetime, supportFirmwareActions, supportDeviceActions);
+				lifetime, supportFirmwareActions, supportDeviceActions, null);
+		
+	}
+	
+	public boolean sendDeviceManageRequest(String typeId, String deviceId, 
+			long lifetime, boolean supportFirmwareActions, 
+			boolean supportDeviceActions, Map<String,Boolean> customActions) throws MqttException {
+		
+		return this.sendDeviceManageRequest(typeId, deviceId, null, 
+				lifetime, supportFirmwareActions, supportDeviceActions, customActions);
 		
 	}
 	
@@ -456,6 +504,9 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 	 * 
 	 * @param supportDeviceActions Tells whether the device supports Device actions or not.
 	 *        The device must add a Device action handler to handle the reboot and factory reset requests.
+	 *
+	 * @param customActions Tells whether the device supports any custom device management extensions.
+	 *	  The device must add a Custom action handler to handle the custom action requests.
        
 	 * @return True if successful
 	 * @throws MqttException when failure
@@ -465,7 +516,8 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 									DeviceData deviceData,
 									long lifetime,
 									boolean supportFirmwareActions, 
-									boolean supportDeviceActions) throws MqttException {
+									boolean supportDeviceActions,
+									Map<String,Boolean> customActions) throws MqttException {
 		
 		final String METHOD = "manage";
 		
@@ -478,10 +530,11 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 			if(deviceData == null) {
 				deviceData = new DeviceData.Builder().typeId(typeId).deviceId(deviceId).build();
 			}
-			mc = new ManagedGatewayDevice(this, deviceData, supportFirmwareActions, supportDeviceActions);
+			mc = new ManagedGatewayDevice(this, deviceData, supportFirmwareActions, supportDeviceActions, customActions);
 		} else {
 			mc.setSupportsFirmwareActions(supportFirmwareActions);
 			mc.setSupportDeviceActions(supportDeviceActions);
+			mc.setSupportsCustomActions(customActions);
 		}
 		
 		if(reponseSubscription == false) {
@@ -501,21 +554,26 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 		JsonObject supports = new JsonObject();
 		supports.add("deviceActions", new JsonPrimitive(supportDeviceActions));
 		supports.add("firmwareActions", new JsonPrimitive(supportFirmwareActions));
+		if (customActions != null) {
+			for (String bundleId : customActions.keySet()) {
+				supports.add(bundleId, new JsonPrimitive(customActions.get(bundleId)));
+			}
+		}
 			
 		JsonObject data = new JsonObject();
 		data.add("supports", supports);
 		DeviceInfo devInfo = mc.getDeviceData().getDeviceInfo();
-		if (devInfo != null) {
-			JsonObject jsonDevInfo = devInfo.toJsonObject();
-			if (jsonDevInfo != null && !jsonDevInfo.isJsonNull())
-				data.add("deviceInfo", mc.getDeviceData().getDeviceInfo().toJsonObject());
-		}
-		DeviceMetadata metadta = mc.getDeviceData().getMetadata();
-		if (metadta != null) {
-			JsonObject jsonMetadata = metadta.toJsonObject().getAsJsonObject();
-			if (jsonMetadata != null && !jsonMetadata.isJsonNull()) {
-				data.add("metadata", mc.getDeviceData().getMetadata().getMetadata());
-			}
+ 		if (devInfo != null) {
+ 			JsonObject jsonDevInfo = devInfo.toJsonObject();
+ 			if (jsonDevInfo != null && !jsonDevInfo.isJsonNull())
+ 				data.add("deviceInfo", mc.getDeviceData().getDeviceInfo().toJsonObject());
+ 		}
+ 		DeviceMetadata metadta = mc.getDeviceData().getMetadata();
+ 		if (metadta != null) {
+ 			JsonObject jsonMetadata = metadta.toJsonObject().getAsJsonObject();
+ 			if (jsonMetadata != null && !jsonMetadata.isJsonNull()) {
+ 				data.add("metadata", mc.getDeviceData().getMetadata().getMetadata());
+ 			}
 		}
 		data.add("lifetime", new JsonPrimitive(lifetime));
 		jsonPayload.add("d", data);
@@ -1153,23 +1211,23 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 					case MqttException.REASON_CODE_CLIENT_DISCONNECTING:
 						try {
 							LoggerUtility.log(Level.WARNING, CLASS_NAME, METHOD, " Connection Lost retrying to publish MSG :"+
-									new String(message.getPayload(), "UTF-8") + " on topic "+topic+" every 5 seconds");
-						} catch (UnsupportedEncodingException e1) {
-							e1.printStackTrace();
-						}
-						wait = 5 * 1000;
-						break;
-					case MqttException.REASON_CODE_MAX_INFLIGHT:
-						wait = 50;
-						break;
-					default:
-						throw ex;
-					}
-					// Retry
-					try {
-						Thread.sleep(wait);
-						continue;
-					} catch (InterruptedException e) {}
+ 									new String(message.getPayload(), "UTF-8") + " on topic "+topic+" every 5 seconds");
+ 						} catch (UnsupportedEncodingException e1) {
+ 							e1.printStackTrace();
+ 						}
+ 						wait = 5 * 1000;
+ 						break;
+ 					case MqttException.REASON_CODE_MAX_INFLIGHT:
+ 						wait = 50;
+ 						break;
+ 					default:
+  						throw ex;
+  					}
+ 					// Retry
+ 					try {
+ 						Thread.sleep(wait);
+ 						continue;
+ 					} catch (InterruptedException e) {}
 				}
 			
 				if (isConnected() == false) {
@@ -1207,12 +1265,12 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 		jsonPubMsg.add("qos", new JsonPrimitive(qos));
 		jsonPubMsg.add("payload", payload);
 		publishQueue.add(jsonPubMsg);
-		LoggerUtility.log(Level.FINE, CLASS_NAME, METHOD, ": Queued Topic(" + topic + ") qos=" +
-				qos + " payload (" + payload.toString() + ")");
+		LoggerUtility.log(Level.FINE, CLASS_NAME, METHOD, ": Queued Topic(" + topic + ") qos=" + 
+						qos + " payload (" + payload.toString() + ")");
 	}
 	
 	private void publish(String topic, JsonObject payload) throws MqttException {
-		publish(topic, payload, this.getMessagingQoS());
+ 		publish(topic, payload, this.getMessagingQoS());
 	}
 	
 	private void publish(JsonObject jsonPubMsg) throws MqttException, UnsupportedEncodingException {
@@ -1294,7 +1352,7 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 		}
 		if (jsonResponse == null) {
 			LoggerUtility.warn(CLASS_NAME, METHOD, "NO RESPONSE from Watson IoT Platform on topic " + topic 
-					+ " for request: " + jsonPayload.toString());
+		 					+ " for request: " + jsonPayload.toString());			
 			LoggerUtility.warn(CLASS_NAME, METHOD, "Connected(" + isConnected() + ")");
 		}
 		return jsonResponse;
@@ -1306,19 +1364,6 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 	 */
 	@Override
 	public void disconnect() {
-		Set<String> devices = devicesMap.keySet();
-		Iterator<String> itr = devices.iterator();
-		while(itr.hasNext()) {
-			ManagedGatewayDevice mc = (ManagedGatewayDevice) this.devicesMap.get(itr.next());
-			if(mc != null && mc.bManaged == true) {
-				try {
-					this.sendUnManageRequest(mc);
-					itr.remove();
-				} catch (MqttException e) {
-					e.printStackTrace();
-				}
-			}
-		}
 		this.terminateHandlers();
 		super.disconnect();
 	}
@@ -1505,11 +1550,25 @@ public class ManagedGateway extends GatewayClient implements IMqttMessageListene
 		this.actionHandler = actionHandler;
 	}
 	
+	public void addCustomActionHandler(CustomActionHandler actionHandler) throws Exception {
+		final String METHOD = "addCustomActionHandler";
+		if(this.customActionHandler != null) {
+			LoggerUtility.severe(CLASS_NAME, METHOD, "Custom Action Handler is already set, "
+					+ "so can not add the new Custom Action Handler !");
+			
+			throw new Exception("Custom Action Handler is already set, "
+					+ "so can not add the new Custom Action Handler !");
+		}
+		
+		this.customActionHandler = actionHandler;
+	}
+	
 	/**
 	 * We are disconnecting, so terminate all handlers.
 	 */
 	private void terminateHandlers() {
 		fwHandler = null;
 		actionHandler = null;
+		customActionHandler = null;
 	}
 }

@@ -42,6 +42,7 @@ public class GatewayDMServerTopic implements DMServerTopic {
 		INITIATE_FACTORY_RESET("mgmt/initiate/device/factory_reset"),
 		INITIATE_FIRMWARE_DOWNLOAD("mgmt/initiate/firmware/download"),
 		INITIATE_FIRMWARE_UPDATE("mgmt/initiate/firmware/update"),
+		INITIATE_CUSTOM_ACTION("mgmt/custom/#"),
 		DEVICE_UPDATE("device/update");
 		
 		private ServerTopic(String name) {
@@ -77,6 +78,8 @@ public class GatewayDMServerTopic implements DMServerTopic {
 			
 			case "mgmt/initiate/firmware/update": return INITIATE_FIRMWARE_UPDATE;
 			
+			case "mgmt/custom/#": return INITIATE_CUSTOM_ACTION;
+
 			case "device/update": return DEVICE_UPDATE;
 			
 			}
@@ -129,6 +132,12 @@ public class GatewayDMServerTopic implements DMServerTopic {
 	public String getInitiateFirmwareUpdate() {
 
 		return topicStarter + ServerTopic.INITIATE_FIRMWARE_UPDATE.getName();
+	}
+
+	@Override
+	public String getInitiateCustomAction() {
+
+		return topicStarter + ServerTopic.INITIATE_CUSTOM_ACTION.getName();
 	}
 }
 

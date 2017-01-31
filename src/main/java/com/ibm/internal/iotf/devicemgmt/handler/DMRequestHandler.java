@@ -12,7 +12,6 @@
  */
 package com.ibm.internal.iotf.devicemgmt.handler;
 
-
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
@@ -47,9 +46,10 @@ public abstract class DMRequestHandler implements IMqttMessageListener {
 	private static Map<ManagedClient, FactoryResetRequestHandler> resetHandlers = new HashMap<ManagedClient,FactoryResetRequestHandler>();
 	private static Map<ManagedClient, FirmwareDownloadRequestHandler> fwDownloadHandlers = new HashMap<ManagedClient,FirmwareDownloadRequestHandler>();
 	private static Map<ManagedClient, FirmwareUpdateRequestHandler> fwUpdateHandlers = new HashMap<ManagedClient,FirmwareUpdateRequestHandler>();
+	private static Map<ManagedClient, CustomRequestHandler> customHandlers = new HashMap<ManagedClient,CustomRequestHandler>();
 	
 	protected abstract String getTopic();
-	protected abstract void handleRequest(JsonObject jsonRequest);
+	protected abstract void handleRequest(JsonObject jsonRequest, String topic);
 	
 	@Override
 	public void messageArrived(String topic, MqttMessage message) {
@@ -60,7 +60,7 @@ public abstract class DMRequestHandler implements IMqttMessageListener {
 			LoggerUtility.fine(CLASS_NAME, METHOD, System.identityHashCode(this) + "Handler(" + this.getClass().getName() + 
 					") Received request on topic " + topic + ") " + jsonRequest.toString());
 			
-			handleRequest(jsonRequest);
+			handleRequest(jsonRequest, topic);
 		} catch (Exception e) {
 			LoggerUtility.severe(CLASS_NAME, METHOD, "Unexpected Exception = " + e.getMessage());
 			e.printStackTrace();
@@ -109,8 +109,8 @@ public abstract class DMRequestHandler implements IMqttMessageListener {
 	 */
 	public static void setRequestHandlers(ManagedClient dmClient) throws MqttException{
 		
-		String[] topics = new String[7];
-		IMqttMessageListener[] listener = new IMqttMessageListener[7];
+		String[] topics = new String[8];
+		IMqttMessageListener[] listener = new IMqttMessageListener[8];
 		int index = 0;
 		
 		DeviceUpdateRequestHandler device = deviceUpdateHandlers.get(dmClient);
@@ -153,6 +153,14 @@ public abstract class DMRequestHandler implements IMqttMessageListener {
 			resetHandlers.put(dmClient, reset);
 		}
 		
+		CustomRequestHandler custom = customHandlers.get(dmClient);
+		if (custom == null) {
+			custom = new CustomRequestHandler(dmClient);
+			topics[index] = custom.getTopic();
+			listener[index++] = custom;
+			customHandlers.put(dmClient, custom);
+		}
+		
 		FirmwareDownloadRequestHandler fwDownload = fwDownloadHandlers.get(dmClient);
 		if (fwDownload == null) {
 			fwDownload = new FirmwareDownloadRequestHandler(dmClient);
@@ -188,7 +196,7 @@ public abstract class DMRequestHandler implements IMqttMessageListener {
 	 */
 	public static void clearRequestHandlers(ManagedClient dmClient) throws MqttException {
 		
-		String[] topics = new String[7];
+		String[] topics = new String[8];
 		int index = 0;
 		
 		DeviceUpdateRequestHandler device = deviceUpdateHandlers.remove(dmClient);
@@ -216,6 +224,11 @@ public abstract class DMRequestHandler implements IMqttMessageListener {
 			topics[index++] = reset.getTopic();
 		}
 
+		CustomRequestHandler custom = customHandlers.remove(dmClient);
+		if (custom != null) {
+			topics[index++] = custom.getTopic();
+		}
+		
 		FirmwareDownloadRequestHandler fwDownload = fwDownloadHandlers.remove(dmClient);
 		if (fwDownload != null) {
 			topics[index++] = fwDownload.getTopic();

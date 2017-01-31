@@ -38,10 +38,15 @@ public class IoTFCReSTException extends Exception {
 			"Conflict";
 	public static final String HTTP_ADD_DM_EXTENSION_ERR_500 =
 			"Internal server error";
-	public static final String HTTP_INITIATE_DM_REQUEST_ERR_500 = HTTP_ERR_500;
-	public static final String HTTP_GET_DM_REQUEST_ERR_404 =
-			"Request status not found";
+
 	public static final String HTTP_GET_DM_REQUEST_ERR_500 = HTTP_ERR_500;
+	public static final String HTTP_GET_DM_REQUEST_ERR_404 = "Requested status not found";
+
+	public static final String HTTP_INITIATE_DM_REQUEST_ERR_500 = HTTP_ERR_500;
+	public static final String HTTP_INITIATE_DM_REQUEST_ERR_400 = HTTP_ADD_DEVICE_ERR_400;
+	public static final String HTTP_INITIATE_DM_REQUEST_ERR_401 = HTTP_ADD_DEVICE_ERR_401;
+	public static final String HTTP_INITIATE_DM_REQUEST_ERR_403 = "One of more of the devices specified does not support the requested action";
+	public static final String HTTP_INITIATE_DM_REQUEST_ERR_404 = "One of more of the devices specified does not support the requested action";
 	
 	private String method = null;
 	private String url = null;

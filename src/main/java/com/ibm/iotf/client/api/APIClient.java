@@ -132,29 +132,29 @@ public class APIClient {
 		if(isGateway) {
 			authKey = "g/" + this.orgId + '/' + mdeviceType + '/' + mdeviceId;
 		}
-		
-		TrustManager[] trustAllCerts = null;
-		boolean trustAll = false;
-		
-		String value = opt.getProperty("Trust-All-Certificates");
-		if (value != null) {
-			trustAll = Boolean.parseBoolean(trimedValue(value));
-		}
-		
-		if (trustAll) {
-			trustAllCerts = new TrustManager[] { new X509TrustManager() {
-				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-					return new X509Certificate[0];
-				}
-	
-				public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-				}
-	
-				public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-				}
-			} };
-		}
 
+		TrustManager[] trustAllCerts = null;
+ 		boolean trustAll = false;
+ 		
+ 		String value = opt.getProperty("Trust-All-Certificates");
+ 		if (value != null) {
+ 			trustAll = Boolean.parseBoolean(trimedValue(value));
+ 		}
+ 		
+ 		if (trustAll) {
+ 			trustAllCerts = new TrustManager[] { new X509TrustManager() {
+ 				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+ 					return new X509Certificate[0];
+ 				}
+ 	
+ 				public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+ 				}
+ 	
+ 				public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+ 				}
+ 			} };
+ 		}
+		
 		sslContext = SSLContext.getInstance("TLSv1.2");
 		sslContext.init(null, trustAllCerts, null);
 	}
@@ -2602,6 +2602,18 @@ public class APIClient {
 				String result = this.readContent(response, METHOD);
 				jsonResponse = new JsonParser().parse(result);
 				break;
+			case 400:
+				ex = new IoTFCReSTException(method, sb.toString(), request.toString(), code, IoTFCReSTException.HTTP_INITIATE_DM_REQUEST_ERR_400, null);
+				break;
+			case 401:
+				ex = new IoTFCReSTException(method, sb.toString(), request.toString(), code, IoTFCReSTException.HTTP_INITIATE_DM_REQUEST_ERR_401, null);
+				break;
+			case 403:
+				ex = new IoTFCReSTException(method, sb.toString(), request.toString(), code, IoTFCReSTException.HTTP_INITIATE_DM_REQUEST_ERR_403, null);
+				break;
+			case 404:
+				ex = new IoTFCReSTException(method, sb.toString(), request.toString(), code, IoTFCReSTException.HTTP_INITIATE_DM_REQUEST_ERR_404, null);
+				break;
 			case 500:
 				ex = new IoTFCReSTException(method, sb.toString(), request.toString(), code, IoTFCReSTException.HTTP_INITIATE_DM_REQUEST_ERR_500, null);
 				break;
@@ -2698,35 +2710,33 @@ public class APIClient {
 		String method = "get";
 		try {
 			response = connect(method, sb.toString(), null, null);
-			code = response.getStatusLine().getStatusCode();
 			switch (code) {
-			case 200:
-				String result = this.readContent(response, METHOD);
-				jsonResponse = new JsonParser().parse(result);
-				break;
-			case 404:
-				ex = new IoTFCReSTException(method, sb.toString(), null, code, IoTFCReSTException.HTTP_GET_DM_REQUEST_ERR_404, null);
-				break;
-			case 500:
-				ex = new IoTFCReSTException(method, sb.toString(), null, code, IoTFCReSTException.HTTP_GET_DM_REQUEST_ERR_500, null);
-				break;
-			default:
-				ex = new IoTFCReSTException(method, sb.toString(), null, code, IoTFCReSTException.HTTP_ERR_UNEXPECTED, null);
+                        case 200:
+                                String result = this.readContent(response, METHOD);
+                                jsonResponse = new JsonParser().parse(result);
+                                break;
+                        case 404:
+                                ex = new IoTFCReSTException(method, sb.toString(), null, code, IoTFCReSTException.HTTP_GET_DM_REQUEST_ERR_404, null);
+                                break;
+                        case 500:
+                                ex = new IoTFCReSTException(method, sb.toString(), null, code, IoTFCReSTException.HTTP_GET_DM_REQUEST_ERR_500, null);
+                                break;
+                        default:
+                                ex = new IoTFCReSTException(method, sb.toString(), null, code, IoTFCReSTException.HTTP_ERR_UNEXPECTED, null);
 			}
 		} catch(Exception e) {
-			ex = new IoTFCReSTException("Failure in getting the DM Request for ID (" 
+			ex = new IoTFCReSTException("Failure in getting the DM Request for ID ("
 					+ requestId + ")::" + e.getMessage());
 			ex.initCause(e);
 			throw ex;
 		}
-		
-		if (jsonResponse != null) {
-			return jsonResponse.getAsJsonObject();
-		} else {
-			if (ex != null) {
-				throw ex;
-			}
-			return null;
+                if (jsonResponse != null) {
+                        return jsonResponse.getAsJsonObject();
+                } else {
+                        if (ex != null) {
+                                throw ex;
+                        }
+                        return null;
 		}
 	}
 

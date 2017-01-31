@@ -72,7 +72,7 @@ public class FirmwareUpdateRequestHandler extends DMRequestHandler {
 	 *  should be set to the value of mgmt.firmware.version.
 	 */
 	@Override
-	public void handleRequest(JsonObject jsonRequest) {
+	public void handleRequest(JsonObject jsonRequest, String topic) {
 		final String METHOD = "handleRequest";
 		ResponseCode rc;
 		

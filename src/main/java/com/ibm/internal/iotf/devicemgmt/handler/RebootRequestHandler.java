@@ -60,7 +60,7 @@ public class RebootRequestHandler extends DMRequestHandler implements PropertyCh
 	 * Handle initiate reboot request from IBM Watson IoT Platform
 	 */
 	@Override
-	protected void handleRequest(JsonObject jsonRequest) {
+	protected void handleRequest(JsonObject jsonRequest, String topic) {
 		final String METHOD = "handleRequest";
 		
 		DeviceAction action = getDMClient().getDeviceData().getDeviceAction();

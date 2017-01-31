@@ -66,7 +66,7 @@ public class ObserveRequestHandler extends DMRequestHandler implements PropertyC
 	 * Handles the observe request from IBM Watson IoT Platform
 	 */
 	@Override
-	protected void handleRequest(JsonObject jsonRequest) {
+	protected void handleRequest(JsonObject jsonRequest, String topic) {
 		JsonObject response = new JsonObject();
 		JsonArray responseArray = new JsonArray();
 		JsonObject d = (JsonObject) jsonRequest.get("d");

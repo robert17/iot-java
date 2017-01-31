@@ -38,6 +38,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.ibm.iotf.client.device.DeviceClient;
+import com.ibm.iotf.devicemgmt.CustomActionHandler;
 import com.ibm.iotf.devicemgmt.DeviceActionHandler;
 import com.ibm.iotf.devicemgmt.DeviceData;
 import com.ibm.iotf.devicemgmt.DeviceFirmwareHandler;
@@ -90,6 +91,7 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 
 	private DeviceFirmwareHandler fwHandler = null;
 	private DeviceActionHandler actionHandler = null;
+	private CustomActionHandler customActionHandler = null;
 
 	//Map to handle duplicate responses
 	private Map<String, MqttMessage> requests = new HashMap<String, MqttMessage>();
@@ -99,6 +101,7 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 
 	private boolean supportDeviceActions = false;
 	private boolean supportFirmwareActions = false;
+	private Map<String,Boolean> customActions = new HashMap<>();
 	private boolean bManaged = false;
 	private Date dormantTime;
 	private String responseSubscription = null;
@@ -211,6 +214,11 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 		super.connect();
 	}
 
+	
+	public boolean sendManageRequest(long lifetime, boolean supportsFirmwareActions,
+			boolean supportsDeviceActions) throws MqttException {
+		return sendManageRequest(lifetime, supportsFirmwareActions, supportsDeviceActions, null);
+	}
 
 	/**
 	 * <p>Send a device manage request to Watson IoT Platform</p>
@@ -234,11 +242,14 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 	 * @param supportDeviceActions Tells whether the device supports Device actions or not.
 	 *        The device must add a Device action handler to handle the reboot and factory reset requests.
 	 *
+	 * @param customActions Tells whether the device supports any custom device management extensions.
+         *        The device must add a Custom action handler to handle the custom action requests.
+	 *
 	 * @return boolean response containing the status of the manage request
 	 * @throws MqttException When there is a failure
 	 */
 	public boolean sendManageRequest(long lifetime, boolean supportFirmwareActions,
-			boolean supportDeviceActions) throws MqttException {
+			boolean supportDeviceActions, Map<String,Boolean> customActions) throws MqttException {
 
 		final String METHOD = "manage";
 
@@ -255,11 +266,18 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 
 		this.supportDeviceActions = supportDeviceActions;
 		this.supportFirmwareActions = supportFirmwareActions;
+		this.customActions = customActions;
+		
 		JsonObject jsonPayload = new JsonObject();
 		JsonObject supports = new JsonObject();
 		supports.add("deviceActions", new JsonPrimitive(supportDeviceActions));
 		supports.add("firmwareActions", new JsonPrimitive(supportFirmwareActions));
-
+		if (customActions != null) {
+			for (String bundleId : customActions.keySet()) {
+				supports.add(bundleId, new JsonPrimitive(customActions.get(bundleId)));
+			}
+		}
+		
 		JsonObject data = new JsonObject();
 		data.add("supports", supports);
 		if (deviceData.getDeviceInfo() != null) {
@@ -657,9 +675,9 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 					}
 				} catch(MqttException ex) {
 					long wait;
-					switch (ex.getReasonCode()) {
-					case MqttException.REASON_CODE_CLIENT_NOT_CONNECTED:
-					case MqttException.REASON_CODE_CLIENT_DISCONNECTING:
+ 					switch (ex.getReasonCode()) {
+ 					case MqttException.REASON_CODE_CLIENT_NOT_CONNECTED:
+ 					case MqttException.REASON_CODE_CLIENT_DISCONNECTING:
 						try {
 							LoggerUtility.log(Level.WARNING, CLASS_NAME, METHOD, " Connection Lost retrying to publish MSG :"+
 									new String(message.getPayload(), "UTF-8") + " on topic "+topic+" every 5 seconds");
@@ -719,11 +737,11 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 		LoggerUtility.log(Level.FINE, CLASS_NAME, METHOD, ": Queued Topic(" + topic + ") qos=" +
 													qos + " payload (" + payload.toString() + ")");
 	}
-	
-	public void publish(String topic, JsonObject payload) throws MqttException {
-		publish(topic, payload, this.getMessagingQoS());
-	}
 
+ 	public void publish(String topic, JsonObject payload) throws MqttException {
+ 		publish(topic, payload, this.getMessagingQoS());
+ 	}
+	 
 	private void publish(JsonObject jsonPubMsg) throws MqttException, UnsupportedEncodingException {
 		final String METHOD = "publish1";
 		String topic = jsonPubMsg.get("topic").getAsString();
@@ -972,11 +990,11 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 		}
 
 		@Override
-		public void publish(String response, JsonObject payload)
-				throws MqttException {
-			dmClient.publish(response, payload);
-		}
-		
+ 		public void publish(String response, JsonObject payload)
+ 				throws MqttException {
+ 			dmClient.publish(response, payload);
+ 		}		
+		 
 		@Override
 		public void publish(String response, JsonObject payload, int qos)
 				throws MqttException {
@@ -1020,6 +1038,10 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 			return dmClient.fwHandler;
 		}
 
+		@Override
+		public CustomActionHandler getCustomActionHandler() {
+			return dmClient.customActionHandler;
+		}
 	}
 
 	/**
@@ -1071,9 +1093,22 @@ public class ManagedDevice extends DeviceClient implements IMqttMessageListener,
 		}
 		this.actionHandler = actionHandler;
 	}
+	
+	public void addCustomActionHandler(CustomActionHandler actionHandler) throws Exception {
+		final String METHOD = "addDeviceActionHandler";
+		if(this.actionHandler != null) {
+			LoggerUtility.severe(CLASS_NAME, METHOD, "Custom Action Handler is already set, "
+					+ "so can not add the new Custom Action handler !");
+
+			throw new Exception("Custom Action Handler is already set, "
+					+ "so can not add the new Custom Action handler !");
+		}
+		this.customActionHandler = actionHandler;
+	}
 
 	private void terminateHandlers() {
 		fwHandler = null;
 		actionHandler = null;
+		customActionHandler = null;
 	}
 }

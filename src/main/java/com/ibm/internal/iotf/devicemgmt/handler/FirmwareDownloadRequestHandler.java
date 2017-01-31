@@ -63,7 +63,7 @@ public class FirmwareDownloadRequestHandler extends DMRequestHandler {
 	 * If firmware download is not supported, set rc to 501 and optionally set message accordingly.
 	 */
 	@Override
-	public void handleRequest(JsonObject jsonRequest) {
+	public void handleRequest(JsonObject jsonRequest, String topic) {
 		final String METHOD = "handleRequest";
 		ResponseCode rc;
 		

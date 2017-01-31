@@ -48,7 +48,7 @@ public class CancelRequestHandler extends DMRequestHandler {
 	 * This method handles the cancel request messages from IBM Watson IoT Platform
 	 */
 	@Override
-	protected void handleRequest(JsonObject jsonRequest) {
+	protected void handleRequest(JsonObject jsonRequest, String topic) {
 		JsonArray fields;
 		JsonObject d = (JsonObject)jsonRequest.get("d");
 		if (d != null) {

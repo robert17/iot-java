@@ -31,4 +31,5 @@ public interface DMServerTopic {
 
 	String getInitiateFirmwareUpdate();
 
+	String getInitiateCustomAction();
 }

@@ -13,6 +13,7 @@
  */
 package com.ibm.iotf.devicemgmt;
 
+import com.ibm.internal.iotf.devicemgmt.ConcreteCustomAction;
 import com.ibm.internal.iotf.devicemgmt.ConcreteDeviceAction;
 import com.ibm.internal.iotf.devicemgmt.DeviceMgmt;
 import com.ibm.iotf.devicemgmt.resource.Resource;
@@ -38,6 +39,7 @@ public class DeviceData {
 	private DeviceMgmt mgmt = null;
 	private DeviceMetadata metadata = null;
 	private DeviceAction deviceAction = null;
+	private CustomAction customAction = null;
 	
 	private Resource root = new StringResource(Resource.ROOT_RESOURCE_NAME, "");
 	
@@ -131,6 +133,18 @@ public class DeviceData {
 		}
 		
 		return deviceAction;
+	}
+	
+	/**
+	 * Returns the custom action object
+	 * @return CustomAction object or null
+	 */
+	public CustomAction getCustomAction() {
+		if(this.customAction == null) {
+			this.customAction = new ConcreteCustomAction(typeId, deviceId);
+		}
+		
+		return customAction;
 	}
 
 	/**
