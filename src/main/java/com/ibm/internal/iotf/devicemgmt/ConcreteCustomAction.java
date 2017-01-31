@@ -17,6 +17,7 @@ package com.ibm.internal.iotf.devicemgmt;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.ibm.iotf.devicemgmt.CustomAction;
@@ -36,6 +37,7 @@ public class ConcreteCustomAction implements CustomAction {
 	private String reqId;
 	private String typeId;
 	private String deviceId;
+	private JsonElement parameters;
 
 	public ConcreteCustomAction(String typeId, String deviceId) {
 		this.typeId = typeId;
@@ -166,5 +168,13 @@ public class ConcreteCustomAction implements CustomAction {
 	@Override
 	public void setMessage(String message) {
 		this.message = message;
+	}
+	
+	public JsonElement getParameters() {
+		return parameters;
+	}
+	
+	public void setParameters(JsonElement parameters) {
+		this.parameters = parameters;
 	}
 }

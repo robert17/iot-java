@@ -14,6 +14,8 @@
 
 package com.ibm.iotf.devicemgmt;
 
+import com.google.gson.JsonElement;
+
 /**
  * This class encapsulates the custom actions.
  * 
@@ -80,4 +82,9 @@ public interface CustomAction {
 	public void setReqId(String reqId);
 
 	public void setMessage(String message);
+
+	public JsonElement getParameters();
+	
+	public void setParameters(JsonElement parameters);
+	
 }

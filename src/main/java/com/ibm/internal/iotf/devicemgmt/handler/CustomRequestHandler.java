@@ -82,7 +82,7 @@ public class CustomRequestHandler extends DMRequestHandler implements PropertyCh
 			action.setBundleId(bundleId);
 			action.setActionId(actionId);
 			action.setReqId(jsonRequest.get(REQ_ID).getAsString());
-
+			action.setParameters(jsonRequest.get("d").getAsJsonObject().get("fields"));
 			((ConcreteCustomAction)action).clearListener();
 			((ConcreteCustomAction)action).addPropertyChangeListener(this);
 			CustomActionHandler handler = getDMClient().getCustomActionHandler();
